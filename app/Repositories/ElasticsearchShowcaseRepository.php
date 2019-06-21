@@ -36,7 +36,7 @@ class ElasticsearchShowcaseRepository implements ShowcaseRepository
             array_push($match, array('match' => array('type_category' => $query['category'])));
 
         $elasticQuery = [
-            'index' => 'shit',
+            'index' => 'items',
             'type' => $instance->getSearchType(),
             'body' => [
                 'query' => [

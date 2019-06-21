@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Traits\ResponseManager;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -18,6 +19,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class Handler extends ExceptionHandler
 {
+    use ResponseManager;
     /**
      * A list of the exception types that are not reported.
      *
