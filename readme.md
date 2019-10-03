@@ -1,16 +1,15 @@
-Steps To Get This App Working : <br /> <br />
+<!-- ABOUT THE PROJECT -->
+## About The Project
 
-1 - Make sure you have the following items installed on your machine : <br />
-    php 7, laravel 5, composer, elasticsearch 6, php-curl, memcached, php-memcached, redis-server <br /> <br />
+This is a simple RESTful app written in php using laravel framework 
 
-2 - Clone the project.<br />
-3 - Run composer update in your terminal.<br />
-4 - Create a mysql database on your machine with the following configurations :<br />
-    user : seller<br />
-    password : seller<br />
-    database : showcase<br />
-    grant all accesses for showcase database to seller user<br /><br />
-    
-5 - Make sure mysql and elasticsearch services are on.<br />
-6 - Run php artisan migrate --seed in your terminal.<br />
-7 - Enter localhost:8000/api/ui in your favorite browser and enjoy.<br />
+Here's what this app can do:
+* Authentication operations such as sign up, login, logout.
+* Logged in user can add, update and delete products with different attributes.
+* All users can search among products.
+
+About the app:
+* Searching is implemented using elasticsearch to be fast.
+* Main database is MySql. But elasticsearch is also used for searching.
+* Communicating with elasticsearch is done using laravel queues to prevent performance drop.
+* This app also has a simple user interface.
