@@ -186,7 +186,12 @@ def print_deliveries():
     print(Delivery.select().count(None), 'delivery[s] found.')
     print('-----------------')
 
-def print_foods():
+def print_items():
+    print('-----------------')
+    for x in Item.select().where(Item.end_time == '2100-01-01 09:00:00').execute(None):
+        print('{:>3} | {:<15} | {:>5} | {}'.format(x.id, x.name, x.price, x.food))
+    print()
+    print(Item.select().where(Item.end_time == '2100-01-01 09:00:00').count(None), 'food[s] found.')
     print('-----------------')
 
 def change_database(function, **args):
@@ -194,7 +199,9 @@ def change_database(function, **args):
         function(**args)
     except:
         print('something went wrong :(')
-        return
+        return False
     print('database updated :)')
+    return True
 
-setup_database()
+if __name__ == '__main__':
+    setup_database()

@@ -2,6 +2,7 @@ from datetime import datetime
 from database_engine import *
 from utils_delivery import *
 from utils_market import *
+from utils_item import *
 
 def new_order():
     print()
@@ -44,29 +45,7 @@ def new_raw_material_order():
     market = int(input('which market: '))
     print('new raw material order added.')
 
-# food management
-def show_food():
-    print()
-    print('showing all the foods')
-    input('press enter to return to main menu')
-def add_food():
-    print()
-    name = input('enter name of the new food: ')
-    price = float(input('enter the food cost: '))
-    # set its expiration date
-    print('new food added')
-def update_food():
-    print()
-    print('showing all foods')
-    food = input('which food: ')
-    price = float(input('enter the new food cost: '))
-    # set its expiration date
-    print('food updated')
-def delete_food():
-    print()
-    print('showing all foods')
-    food = input('which food: ')
-    print('food deleted')
+# # item management
 
 # client management
 def show_clients():
@@ -121,8 +100,8 @@ def show_manager_reports():
     print('reports')
 
 
-def food():
-    general_menu('FOODS', 2, ['show all foods', 'add new food', 'update some food', 'delete food'], [show_food, add_food, update_food, delete_food])
+def food_material():
+    general_menu('FOODS', 2, ['show all items', 'add new item', 'update item', 'delete item'], [show_items, add_item, update_item, delete_item])
 
 def client():
     general_menu('CLIENTS', 4, ['show all clients', 'add new client', 'update some client', 'delete some client', 'show all addresses', 'add address'], [])
@@ -145,5 +124,5 @@ def general_menu(title, base, titles, functions):
     functions[choice-1]()
 
 while True:
-    general_menu('MAIN MENU', 1, ['new order', 'foods', 'raw_materials', 'clients', 'deliveries', 'markets', 'reports', 'exit'],
-                          [new_order, food, None, None, delivery, market, None, exit])
+    general_menu('MAIN MENU', 1, ['new order', 'foods & materials', 'clients', 'deliveries', 'markets', 'reports', 'exit'],
+                          [new_order, food_material, None, delivery, market, None, exit])
