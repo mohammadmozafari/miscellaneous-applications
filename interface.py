@@ -1,5 +1,7 @@
 from datetime import datetime
 from database_engine import *
+from utils_delivery import *
+from utils_market import *
 
 def new_order():
     print()
@@ -108,79 +110,6 @@ def add_address():
     address = input('enter new address: ')
     phone = input('enter home phone: ')
     print('address added')
-
-# delivery management
-def show_deliveries():
-    print()
-    print_deliveries()
-    input('press enter to return to main menu')
-def add_delivery():
-    print()
-    first_name = input('enter first name: ')
-    last_name = input('enter last name: ')
-    phone = input('enter phone number: ')
-    params = {
-        'first_name': first_name,
-        'last_name': last_name,
-        'phone_number': phone
-    }
-    if change_database(Delivery.create, **params):
-        print('new delivery added')
-    else:
-        print('something went wrong')
-def update_delivery():
-    print()
-    print_deliveries()
-    delivery = input('which delivery: ')
-    first_name = input('enter first name: ')
-    last_name = input('enter last name: ')
-    phone = input('enter phone number: ')
-    delivery = Delivery.get_by_id(delivery)
-    delivery.first_name = first_name
-    delivery.last_name = last_name
-    delivery.phone_number = phone
-    if change_database(delivery.save, **{}):
-        print('delivery updated')
-    else:
-        print('something went wrong')
-def delete_delivery():
-    print()
-    print_deliveries()
-    delivery = input('which delivery: ')
-    params = {
-        'pk': delivery
-    }
-    if change_database(Delivery.delete_by_id, **params):
-        print('delivery deleted')
-    else:
-        print('something went wrong')
-
-# market management
-def show_markets():
-    print()
-    print_markets()
-    input('press enter to return to main menu')
-def add_market():
-    print()
-    name = input('enter name of the new market: ')
-    active = 1
-    Market.create(name=name, active=active)
-    print('new market added')
-def update_market():
-    print()
-    print_markets()
-    market = input('which market: ')
-    name = input('enter name of the new market: ')
-    market = Market.get_by_id(market)
-    market.name = name
-    market.save()
-    print('market updated')
-def delete_market():
-    print()
-    print_markets()
-    market = input('which market: ')
-    Market.delete_by_id(market)
-    print('market deleted')
 
 # reports
 def show_user_reports():

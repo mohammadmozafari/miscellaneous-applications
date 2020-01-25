@@ -184,7 +184,7 @@ def add_triggers():
 def print_markets():
     print('-----------------')
     for x in Market.select().execute(None):
-        print('{:>3} | {}'.format(x.id, x.name))
+        print('{:>3} | {:<15} | {}'.format(x.id, x.name, x.active))
     print()    
     print(Market.select().count(None), 'market[s] found.')
     print('-----------------')
@@ -192,7 +192,7 @@ def print_markets():
 def print_deliveries():
     print('-----------------')
     for x in Delivery.select().execute(None):
-        print('{:>3} | {:<50} | {}'.format(x.id, x.first_name + ' ' + x.last_name, x.phone_number))
+        print('{:>3} | {:<30} | {}'.format(x.id, x.first_name + ' ' + x.last_name, x.phone_number))
     print()
     print(Delivery.select().count(None), 'delivery[s] found.')
     print('-----------------')
@@ -201,5 +201,6 @@ def change_database(function, **args):
     try:
         function(**args)
     except:
-        return False
-    return True
+        print('something went wrong :(')
+        return
+    print('database updated :)')
