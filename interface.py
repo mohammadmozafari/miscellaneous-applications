@@ -3,6 +3,7 @@ from database_engine import *
 from utils_delivery import *
 from utils_market import *
 from utils_item import *
+from utils_client import *
 
 def new_order():
     print()
@@ -45,51 +46,6 @@ def new_raw_material_order():
     market = int(input('which market: '))
     print('new raw material order added.')
 
-# # item management
-
-# client management
-def show_clients():
-    print()
-    print('showing all the foods')
-    input('press enter to return to main menu')
-def show_addresses():
-    print()
-    print('all clients')
-    client = input('which client: ')
-    print('showing all client addresses')
-    input('press enter to return to main menu')
-def add_client():
-    print()
-    first_name = input('enter first name: ')
-    last_name = input('enter last name: ')
-    phone_number = input('enter mobile phone number: ')
-    age = input('enter age: ')
-    address = input('enter address (only 1, later you can add more): ')
-    phone = input('enter home phone number: ')
-    # set its expiration date
-    print('new client added')
-def update_client():
-    print()
-    print('showing all clients')
-    client = input('which client: ')
-    first_name = input('enter first name: ')
-    last_name = input('enter last name: ')
-    phone_number = input('enter mobile phone number: ')
-    # set its expiration date
-    print('client updated')
-def delete_client():
-    print()
-    print('showing all clients')
-    client = input('which client: ')
-    print('client deleted')
-def add_address():
-    print()
-    print('all clients')
-    client = input('which client: ')
-    address = input('enter new address: ')
-    phone = input('enter home phone: ')
-    print('address added')
-
 # reports
 def show_user_reports():
     print()
@@ -104,7 +60,8 @@ def food_material():
     general_menu('FOODS', 2, ['show all items', 'add new item', 'update item', 'delete item'], [show_items, add_item, update_item, delete_item])
 
 def client():
-    general_menu('CLIENTS', 4, ['show all clients', 'add new client', 'update some client', 'delete some client', 'show all addresses', 'add address'], [])
+    general_menu('CLIENTS', 4, ['show all clients', 'show all addresses', 'add new client', 'update some client', 'delete some client', 'add address'],
+                                [show_clients, show_addresses, add_client, update_client, delete_client, add_address])
 
 def market():
     general_menu('MARKETS', 6, ['show all markets', 'add new market', 'update existing market', 'delete market'],
@@ -125,4 +82,4 @@ def general_menu(title, base, titles, functions):
 
 while True:
     general_menu('MAIN MENU', 1, ['new order', 'foods & materials', 'clients', 'deliveries', 'markets', 'reports', 'exit'],
-                          [new_order, food_material, None, delivery, market, None, exit])
+                          [new_order, food_material, client, delivery, market, None, exit])

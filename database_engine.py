@@ -46,7 +46,7 @@ class Client(pv.Model):
     first_name = pv.CharField(null=False)
     last_name = pv.CharField(null=False)
     phone_number = pv.CharField(null=False, constraints=[pv.Check('phone_number REGEXP \'^([0-9]\{11\})$\'')])
-    age = pv.IntegerField(null=False)
+    birth_year = pv.IntegerField(null=False)
     class Meta:
         database = db
 class Log_Client(pv.Model):
@@ -56,16 +56,16 @@ class Log_Client(pv.Model):
         database = db
 
 class Address(pv.Model):
-    national_code = pv.ForeignKeyField(Client, null=False)
-    name = pv.CharField(null=False)
+    national_code_id = pv.ForeignKeyField(Client, null=False, on_delete='CASCADE')
+    name = pv.CharField(null=False, )
     address = pv.CharField(null=False)
     phone_number = pv.CharField(null=False, constraints=[pv.Check('phone_number REGEXP \'^([0-9]\{11\})$\'')])
     class Meta:
-        primary_key = pv.CompositeKey('national_code', 'name')
+        primary_key = pv.CompositeKey('national_code_id', 'name')
         database = db
 class Log_Address(pv.Model):
     access_type = pv.CharField(null=False)
-    national_code = pv.IntegerField(null=False)
+    national_code_id = pv.IntegerField(null=False)
     name = pv.CharField(null=False)
     class Meta:
         database = db
@@ -194,10 +194,29 @@ def print_items():
     print(Item.select().where(Item.end_time == '2100-01-01 09:00:00').count(None), 'food[s] found.')
     print('-----------------')
 
+def print_clients():
+    print('-----------------')
+    for x in Client.select().execute(None):
+        print('{} | {:<30} | {} | {}'.format(x.national_code, x.first_name + ' ' + x.last_name, x.phone_number, dt.datetime.now().year - x.birth_year))
+    print()
+    print(Client.select().count(None), 'client[s] found.')
+    print('-----------------')
+
+def print_addresses(client):
+    print('-----------------')
+    for x in Address.select().where(Address.national_code_id == client).execute(None):
+        print('{} | {:<15} | {:<50} | {}'.format(client, x.name, x.address, x.phone_number))
+    print()
+    print(Address.select().where(Address.national_code_id == client).count(None), 'address\'[s] found.')
+    print('-----------------')
+
 def change_database(function, **args):
+    # function(**args)
+    
     try:
         function(**args)
-    except:
+    except Exception as e:
+        print(e)
         print('something went wrong :(')
         return False
     print('database updated :)')
