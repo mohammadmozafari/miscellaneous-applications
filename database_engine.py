@@ -76,6 +76,7 @@ class Receipt(pv.Model):
     client_id = pv.ForeignKeyField(Client, null=True)
     market_id = pv.ForeignKeyField(Market, null=True)
     delivery_id = pv.ForeignKeyField(Delivery, null=True)
+    at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 class Log_Receipt(pv.Model):
@@ -246,7 +247,49 @@ def print_market_materials(market):
         print('{:>3} | {:<15} | {:>5}'.format(x.id, x.name, x.price))
     print()
     x = Item.select().join(Item_Market).where(Item_Market.market_id == market).count(None)
-    print(x, 'address\'[s] found.')
+    print(x, 'material[s] found.')
+    print('-----------------')
+    return x
+
+def print_client_reports(client):
+    total = 0
+    print('-----------------')
+    query = ("SELECT receipt.id, receipt.address, item.name, item.price"
+            " FROM receipt"
+            " INNER JOIN item_receipt ON receipt.id = item_receipt.receipt_id"
+            " INNER JOIN item ON item.id = item_receipt.item_id"
+            " WHERE receipt.client_id = " + str(client))
+
+    count = 0
+    for x in db.execute_sql(query):
+        print('{:>3} | {:<7} | {:<50} | {}'.format(x[0], x[1], x[2], x[3]))
+        total += x[3]
+        count += 1
+    print()
+    x = count
+    print(x, 'item[s] found')
+    print('total cost:', total)
+    print('-----------------')
+    return x
+
+def print_manager_reports():
+    total = 0
+    print('-----------------')
+    query = ("SELECT receipt.id, item.price, receipt.address, item.food"
+            " FROM receipt" 
+            " INNER JOIN item_receipt ON receipt.id = item_receipt.receipt_id"
+            " INNER JOIN item ON item.id = item_receipt.item_id"
+            " WHERE (receipt.at > DATE_SUB(now(), INTERVAL 1 DAY));")
+
+    query_result = db.execute_sql(query)
+    for x in query_result:
+        print('{:>3} | {:<7} | {}'.format(x[0], x[1], x[2]))
+        if x[3]:
+            total += x[1]
+        else:
+            total -= x[1]
+    print()
+    print('total profit:', total)
     print('-----------------')
     return x
 
@@ -270,4 +313,5 @@ def change_database(function, **args):
     return True
 
 if __name__ == '__main__':
-    setup_database()
+    # setup_database()
+    pass
