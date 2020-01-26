@@ -6,9 +6,10 @@ from utils_item import *
 from utils_client import *
 from utils_order import *
 from utils_report import *
+from utils_recreation import *
 
 def food_material():
-    general_menu('FOODS', 2, ['show all items', 'add new item', 'update item', 'delete item'], [show_items, add_item, update_item, delete_item])
+    general_menu('FOODS', 3, ['show all items', 'add new item', 'update item', 'delete item'], [show_items, add_item, update_item, delete_item])
 
 def client():
     general_menu('CLIENTS', 4, ['show all clients', 'show all addresses', 'add new client', 'update some client', 'delete some client', 'add address'],
@@ -26,6 +27,9 @@ def report():
     general_menu('REPORTS', 7, ['manager reports', 'user reports'],
                                 [show_manager_reports, show_client_reports])
 
+def manage_tables():
+    general_menu('TABLES', 8, ['create', 'delete'], [build_table, remove_table])
+
 def general_menu(title, base, titles, functions):
     print()
     print('**************************************************')
@@ -36,5 +40,5 @@ def general_menu(title, base, titles, functions):
     functions[choice-1]()
 
 while True:
-    general_menu('MAIN MENU', 1, ['new order', 'new material order', 'foods & materials', 'clients', 'deliveries', 'markets', 'reports', 'exit'],
-                                 [new_order, new_raw_material_order, food_material, client, delivery, market, report, exit])
+    general_menu('MAIN MENU', 1, ['new order', 'new material order', 'foods & materials', 'clients', 'deliveries', 'markets', 'reports', 'tables', 'exit'],
+                                 [new_order, new_raw_material_order, food_material, client, delivery, market, report, manage_tables, exit])

@@ -140,8 +140,10 @@ name_model = {
 }
 
 def setup_database():
+    query = "DROP EVENT IF EXISTS second_event"
     db.connect()
     db.execute_sql("SET FOREIGN_KEY_CHECKS=0")
+    db.execute_sql(query)
     for x in name_model.keys():
         create_table(x)
     add_triggers()
@@ -182,7 +184,7 @@ def add_triggers():
 
 
 def add_store_precedure():
-    query = ("CREATE EVENT `secnond_event`"
+    query = ("CREATE EVENT `second_event`"
             " ON SCHEDULE EVERY 10 SECOND STARTS '2015-09-01 00:00:00'"
             " ON COMPLETION PRESERVE"
             " DO BEGIN"
@@ -326,6 +328,18 @@ def print_manager_reports():
     print('total profit:', total)
     print('-----------------')
     return x
+
+def print_tables_list():
+    print('-----------------')
+    print('1 - client')
+    print('2 - address')
+    print('3 - delivery')
+    print('4 - item')
+    print('5 - market')
+    print('6 - receipt')
+    print('7 - item_market')
+    print('8 - item_receipt')
+    print('-----------------')
 
 def calculate_total_price(foods):
     total = 0
