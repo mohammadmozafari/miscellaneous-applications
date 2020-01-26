@@ -17,7 +17,24 @@ def add_item():
         'price': price,
         'food': food
     }
-    change_database(Item.create, **params)
+    if food == 0:
+        if Market.select().count == 0: return
+        item = Item(**params)
+        change_database(item.save, **{})
+        print_markets()
+        markets = input('which markets: ')
+        markets = markets.split(' ')
+        p = {
+            'market_id': None,
+            'item_id': item.get_id()
+        }
+        for market in markets:
+            x = int(market)
+            p['market_id'] = x
+            change_database(Item_Market.create, **p)
+        
+    else:
+        change_database(Item.create, **params)
 
 
 def update_item():

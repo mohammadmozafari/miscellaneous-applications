@@ -8,10 +8,12 @@ def show_deliveries():
 
 def add_delivery():
     print()
+    national_code = int(input('enter national code: '))
     first_name = input('enter first name: ')
     last_name = input('enter last name: ')
     phone = input('enter phone number: ')
     params = {
+        'national_code': national_code,
         'first_name': first_name,
         'last_name': last_name,
         'phone_number': phone
