@@ -15,11 +15,11 @@ class Log_Market(pv.Model):
         database = db
 
 class Item(pv.Model):
-    name = pv.CharField(null=False)
+    name = pv.CharField()
     start_time = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     end_time = pv.DateTimeField(constraints=[pv.SQL('DEFAULT \'2100-01-01 09:00:00\'')])
-    price = pv.FloatField(null=False)
-    food = pv.BooleanField(null=False)
+    price = pv.FloatField()
+    food = pv.BooleanField()
     class Meta:
         database = db
 class Log_Item(pv.Model):
@@ -29,7 +29,7 @@ class Log_Item(pv.Model):
         database = db
 
 class Delivery(pv.Model):
-    national_code = pv.IntegerField(primary_key=True)
+    national_code = pv.CharField(primary_key=True)
     first_name = pv.CharField(null=False)
     last_name = pv.CharField(null=False)
     phone_number = pv.CharField(null=False, constraints=[pv.Check('phone_number REGEXP \'^([0-9]\{11\})$\'')])
@@ -42,7 +42,7 @@ class Log_Delivery(pv.Model):
         database = db
 
 class Client(pv.Model):
-    national_code = pv.IntegerField(primary_key=True)
+    national_code = pv.CharField(primary_key=True)
     first_name = pv.CharField(null=False)
     last_name = pv.CharField(null=False)
     phone_number = pv.CharField(null=False, constraints=[pv.Check('phone_number REGEXP \'^([0-9]\{11\})$\'')])
@@ -57,7 +57,7 @@ class Log_Client(pv.Model):
 
 class Address(pv.Model):
     national_code_id = pv.ForeignKeyField(Client, null=False, on_delete='CASCADE')
-    name = pv.CharField(null=False, )
+    name = pv.CharField(null=False)
     address = pv.CharField(null=False)
     phone_number = pv.CharField(null=False, constraints=[pv.Check('phone_number REGEXP \'^([0-9]\{11\})$\'')])
     class Meta:
@@ -72,10 +72,10 @@ class Log_Address(pv.Model):
 
 class Receipt(pv.Model):
     price = pv.FloatField(null=False)
-    address = pv.CharField()
-    client_id = pv.ForeignKeyField(Client)
-    market_id = pv.ForeignKeyField(Market)
-    delivery_id = pv.ForeignKeyField(Delivery)
+    address = pv.CharField(null=True)
+    client_id = pv.ForeignKeyField(Client, null=True)
+    market_id = pv.ForeignKeyField(Market, null=True)
+    delivery_id = pv.ForeignKeyField(Delivery, null=True)
     class Meta:
         database = db
 class Log_Receipt(pv.Model):
@@ -174,41 +174,88 @@ def print_markets():
     print('-----------------')
     for x in Market.select().execute(None):
         print('{:>3} | {:<15} | {}'.format(x.id, x.name, x.active))
-    print()    
-    print(Market.select().count(None), 'market[s] found.')
+    print()
+    x = Market.select().count(None)
+    print(x, 'market[s] found.')
     print('-----------------')
+    return x
             
 def print_deliveries():
     print('-----------------')
     for x in Delivery.select().execute(None):
-        print('{:>3} | {:<30} | {}'.format(x.id, x.first_name + ' ' + x.last_name, x.phone_number))
+        print('{:>3} | {:<30} | {}'.format(x.national_code, x.first_name + ' ' + x.last_name, x.phone_number))
     print()
-    print(Delivery.select().count(None), 'delivery[s] found.')
+    x = Delivery.select().count(None)
+    print(x, 'delivery[s] found.')
     print('-----------------')
+    return x
 
 def print_items():
     print('-----------------')
     for x in Item.select().where(Item.end_time == '2100-01-01 09:00:00').execute(None):
         print('{:>3} | {:<15} | {:>5} | {}'.format(x.id, x.name, x.price, x.food))
     print()
-    print(Item.select().where(Item.end_time == '2100-01-01 09:00:00').count(None), 'food[s] found.')
+    x = Item.select().where(Item.end_time == '2100-01-01 09:00:00').count(None)
+    print(x, 'item[s] found.')
     print('-----------------')
+    return x
+
+def print_foods():
+    print('-----------------')
+    for x in Item.select().where(Item.food, Item.end_time == '2100-01-01 09:00:00').execute(None):
+        print('{:>3} | {:<15} | {:>5} | {}'.format(x.id, x.name, x.price, x.food))
+    print()
+    x = Item.select().where(Item.food, Item.end_time == '2100-01-01 09:00:00').count(None)
+    print(x, 'food[s] found.')
+    print('-----------------')
+    return x
+
+def print_materials():
+    print('-----------------')
+    for x in Item.select().where(not Item.food, Item.end_time == '2100-01-01 09:00:00').execute(None):
+        print('{:>3} | {:<15} | {:>5}'.format(x.id, x.name, x.price))
+    print()
+    x = Item.select().where(not Item.food, Item.end_time == '2100-01-01 09:00:00').count(None)
+    print(x, 'material[s] found.')
+    print('-----------------')
+    return x
 
 def print_clients():
     print('-----------------')
     for x in Client.select().execute(None):
         print('{} | {:<30} | {} | {}'.format(x.national_code, x.first_name + ' ' + x.last_name, x.phone_number, dt.datetime.now().year - x.birth_year))
     print()
-    print(Client.select().count(None), 'client[s] found.')
+    x = Client.select().count(None)
+    print(x, 'client[s] found.')
     print('-----------------')
+    return x
 
 def print_addresses(client):
     print('-----------------')
     for x in Address.select().where(Address.national_code_id == client).execute(None):
-        print('{} | {:<15} | {:<50} | {}'.format(client, x.name, x.address, x.phone_number))
+        print('{:<15} | {:<50} | {}'.format(x.name, x.address, x.phone_number))
     print()
-    print(Address.select().where(Address.national_code_id == client).count(None), 'address\'[s] found.')
+    x = Address.select().where(Address.national_code_id == client).count(None)
+    print(x, 'address\'[s] found.')
     print('-----------------')
+    return x
+
+def print_market_materials(market):
+    print('-----------------')
+    for x in Item.select().join(Item_Market).where(Item_Market.market_id == market).execute(None):
+        print('{:>3} | {:<15} | {:>5}'.format(x.id, x.name, x.price))
+    print()
+    x = Item.select().join(Item_Market).where(Item_Market.market_id == market).count(None)
+    print(x, 'address\'[s] found.')
+    print('-----------------')
+    return x
+
+def calculate_total_price(foods):
+    total = 0
+    for i in foods:
+        x = int(i)
+        total += Item.get_by_id(x).price
+    return total
 
 def change_database(function, **args):
     # function(**args)
