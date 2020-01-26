@@ -11,6 +11,7 @@ class Market(pv.Model):
 class Log_Market(pv.Model):
     access_type = pv.CharField(null=False)
     record_id = pv.IntegerField(null=False)
+    logged_at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 
@@ -25,6 +26,7 @@ class Item(pv.Model):
 class Log_Item(pv.Model):
     access_type = pv.CharField(null=False)
     record_id = pv.IntegerField(null=False)
+    logged_at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 
@@ -38,6 +40,7 @@ class Delivery(pv.Model):
 class Log_Delivery(pv.Model):
     access_type = pv.CharField(null=False)
     record_id = pv.IntegerField(null=False)
+    logged_at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 
@@ -52,6 +55,7 @@ class Client(pv.Model):
 class Log_Client(pv.Model):
     access_type = pv.CharField(null=False)
     record_id = pv.IntegerField(null=False)
+    logged_at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 
@@ -67,6 +71,7 @@ class Log_Address(pv.Model):
     access_type = pv.CharField(null=False)
     national_code_id = pv.IntegerField(null=False)
     name = pv.CharField(null=False)
+    logged_at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 
@@ -82,6 +87,7 @@ class Receipt(pv.Model):
 class Log_Receipt(pv.Model):
     access_type = pv.CharField(null=False)
     record_id = pv.IntegerField(null=False)
+    logged_at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 
@@ -95,6 +101,7 @@ class Log_Item_Receipt(pv.Model):
     access_type = pv.CharField(null=False)
     item_id = pv.IntegerField(null=False)
     receipt_id = pv.IntegerField(null=False)
+    logged_at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 
@@ -108,6 +115,7 @@ class Log_Item_Market(pv.Model):
     access_type = pv.CharField(null=False)
     item_id = pv.IntegerField(null=False)
     market_id = pv.IntegerField(null=False)
+    logged_at = pv.DateTimeField(constraints=[pv.SQL('DEFAULT CURRENT_TIMESTAMP')])
     class Meta:
         database = db
 
@@ -137,6 +145,7 @@ def setup_database():
     for x in name_model.keys():
         create_table(x)
     add_triggers()
+    add_store_precedure()
     db.execute_sql("SET FOREIGN_KEY_CHECKS=1")
     db.close()
 
@@ -148,8 +157,8 @@ def create_table(table_name):
     db.create_tables([model])
 
 def add_triggers():
-    first_query =  'Create Trigger {0} AFTER {1} ON {2} FOR EACH ROW BEGIN INSERT INTO log_{2}(access_type, record_id) VALUES(\'{1}\', {3}); END'
-    second_query = 'Create Trigger {0} AFTER {1} ON {2} FOR EACH ROW BEGIN INSERT INTO log_{2}(access_type, {3}, {4}) VALUES(\'{1}\', {5}, {6}); END'
+    first_query =  'Create Trigger {0} AFTER {1} ON {2} FOR EACH ROW BEGIN INSERT INTO log_{2}(access_type, record_id, logged_at) VALUES(\'{1}\', {3}, NOW()); END'
+    second_query = 'Create Trigger {0} AFTER {1} ON {2} FOR EACH ROW BEGIN INSERT INTO log_{2}(access_type, {3}, {4}, logged_at) VALUES(\'{1}\', {5}, {6}, NOW()); END'
     tables = [
         ('market', 'id'),
         ('item', 'id'),
@@ -171,6 +180,31 @@ def add_triggers():
         db.execute_sql(second_query.format('update_'+t[0], 'update', t[0], t[1], t[2], 'OLD.'+t[1], 'OLD.'+t[2]))
         db.execute_sql(second_query.format('delete_'+t[0], 'delete', t[0], t[1], t[2], 'OLD.'+t[1], 'OLD.'+t[2]))
 
+
+def add_store_precedure():
+    query = ("CREATE EVENT `secnond_event`"
+            " ON SCHEDULE EVERY 10 SECOND STARTS '2015-09-01 00:00:00'"
+            " ON COMPLETION PRESERVE"
+            " DO BEGIN"
+            " delete from log_address"
+            " where TIMESTAMPDIFF(SECOND, logged_at, now()) > 20;"
+            " delete from log_client" 
+            " where TIMESTAMPDIFF(SECOND, logged_at, now()) > 20;"
+            " delete from log_delivery" 
+            " where TIMESTAMPDIFF(SECOND, logged_at, now()) > 20;"
+            " delete from log_item" 
+            " where TIMESTAMPDIFF(SECOND, logged_at, now()) > 20;"
+            " delete from log_item_market" 
+            " where TIMESTAMPDIFF(SECOND, logged_at, now()) > 20;"
+            " delete from log_item_receipt" 
+            " where TIMESTAMPDIFF(SECOND, logged_at, now()) > 20;"
+            " delete from log_market" 
+            " where TIMESTAMPDIFF(SECOND, logged_at, now()) > 20;"
+            " delete from log_receipt" 
+            " where TIMESTAMPDIFF(SECOND, logged_at, now()) > 20;"
+            " END")
+    db.execute_sql(query)
+             
 def print_markets():
     print('-----------------')
     for x in Market.select().execute(None):
@@ -313,5 +347,5 @@ def change_database(function, **args):
     return True
 
 if __name__ == '__main__':
-    # setup_database()
-    pass
+    setup_database()
+    # pass
