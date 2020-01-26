@@ -346,7 +346,6 @@ def print_manager_reports():
     print()
     print('total profit:', total)
     print('-----------------')
-    return x
 
 def print_tables_list():
     print('-----------------')
