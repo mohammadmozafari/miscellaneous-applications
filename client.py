@@ -7,13 +7,10 @@ DIS_PORT_RECV = 1440
 DIS_FILE = 'cluster_nodes.txt'
 
 def main():
-    print(read_cluster_file(DIS_FILE))
-    c = {'11':'a', '22':'d'}
-    update_cluster_file(c, DIS_FILE)
-    print(read_cluster_file(DIS_FILE))
+    a = {'x': '11', 'y': '22'}
+    print((serialize_dic(a)))
     # discovery_recv = threading.Thread(target=recv_nodes, args=(DIS_PORT_RECV, DIS_FILE))
     # discovery_send = threading.Thread(target=send_nodes, args=(DIS_PORT_SEND, DIS_FILE))
-
 
 def read_cluster_file(file):
     cluster = {}
@@ -35,13 +32,31 @@ def update_cluster_file(new_cluster, file):
         cluster = new_cluster
     with open(file, 'w') as f:
         for x, y in cluster.items():
-            f.write(x + ' ' + y + '\n')
+            f.write(y + ' ' + x + '\n')
+
+def deserialize_string(st):
+    st = st.strip()
+    cluster = {}
+    lines = st.split(' ')
+    for line in lines:
+        print(line)
+        name, addr = line.split(',')
+        cluster[addr] = name
+    return cluster
+
+def serialize_dic(dic):
+    st = ''
+    for x, y in dic.items():
+        st += (y + ',' + x + ' ')
+    return st.strip()
 
 def recv_nodes():
     sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
         data, addr = sck.recvfrom(1024)
-        print('discovery message recieved.')
+        cluster = deserialize_string(data)
+        update_cluster_file(cluster, DIS_FILE)
+        print('discovery message recieved and merged.')
 
 def send_nodes():
     while True:
