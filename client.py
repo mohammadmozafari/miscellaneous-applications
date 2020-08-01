@@ -24,11 +24,13 @@ def main():
 
     while True:
         command = input()
-        
+        command = command.strip()
         
         if command == 'exit':
             return
 
+        elif command[:3] == 'get':
+            udp_get(command[4:])
 
 def read_file(path):
     cluster = {}
@@ -102,6 +104,16 @@ def udp_recv(port, path):
         else:
             print_clean('Message format not supported.')
 
+def udp_get(filename):
+    global list_file, send_socket
+    nodes = read_file(list_file)
+    msg = 'Gett {}'.format(filename)
+    print('\n----------------------------------')
+    print('Get message sent to:')
+    for node in nodes.items():
+        send_socket.sendto(msg.encode('utf-8'), (node[1], node[0]))
+        print('   {}:{}'.format(node[1], node[0]))
+
 def process_get(msg, source):
     global send_socket
     msg = msg.strip()[5:]
@@ -127,14 +139,14 @@ def print_clean(msg):
 
 if __name__ == "__main__":
     # print(datetime.datetime.now())
-    t1 = datetime.datetime.now()
-    time.sleep(0.2)
-    t2 = datetime.datetime.now()
+    # t1 = datetime.datetime.now()
+    # time.sleep(0.2)
+    # t2 = datetime.datetime.now()
 
-    t0 = '2020-08-01 19:27:06.615044'
+    # t0 = '2020-08-01 19:27:06.615044'
 
-    d = datetime.datetime.strptime(t0, '%Y-%m-%d %H:%M:%S.%f')
+    # d = datetime.datetime.strptime(t0, '%Y-%m-%d %H:%M:%S.%f')
 
-    print(d)
-    print(t2 - d)
-    # main()
+    # print(d)
+    # print(t2 - d)
+    main()
