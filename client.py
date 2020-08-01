@@ -1,25 +1,33 @@
-import socket
-import threading
 import os
 import time
+import socket
 import datetime
+import threading
+import random as rnd
 
+udp_send_sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+udp_recv_sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 print_lock = threading.Lock()
-send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_port = 0
 tcp_port = 0
 list_file = 'list.txt'
-folder = 'files'
+folder = './files'
+disc_interval = 5
+get_sent_time = None
+download_wait = 2
+current_request_file = None
+response_buffer = []
 
 def main():
-    global udp_port, list_file, folder
+    global udp_port, tcp_port, list_file, folder, download_wait, response_buffer, current_request_file
     
     udp_port = int(input('Enter UDP port: '))
-    dis_interval = 5
+    tcp_port = rnd.randint(12000, 13000)
+    
 
     discovery_recv = threading.Thread(target=udp_recv, args=(udp_port, list_file))
     discovery_recv.start()
-    discovery_send = threading.Thread(target=send_nodes, args=(udp_port, list_file, dis_interval))
+    discovery_send = threading.Thread(target=send_disc, args=(udp_port, list_file))
     discovery_send.start()
 
     while True:
@@ -30,7 +38,13 @@ def main():
             return
 
         elif command[:3] == 'get':
+            current_request_file = command[4:]
             udp_get(command[4:])
+            time.sleep(download_wait)
+            download_best()
+            response_buffer = []
+            current_request_file = None
+
 
 def read_file(path):
     cluster = {}
@@ -72,15 +86,15 @@ def build_message(dic):
         st += '{} {}\n'.format(port, ip)
     return st.strip()
 
-def send_nodes(port, path, interval):
-    global send_socket
+def send_disc(port, path):
+    global udp_send_sck, disc_interval
     while True:
         cluster = read_file(path)
         data = build_message(cluster)
         for port, ip in cluster.items():
-            send_socket.sendto(data.encode('utf-8'), (ip, port))
+            udp_send_sck.sendto(data.encode('utf-8'), (ip, port))
             # print_clean('DISC SEND: Sent dis message to ' + ip + ':' + str(port))
-        time.sleep(interval)
+        time.sleep(disc_interval)
 
 def udp_recv(port, path):
     sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -100,37 +114,58 @@ def udp_recv(port, path):
             process_get(msg, addr)
 
         elif msg_type == 'Resp':
-            pass
+            process_resp(msg, addr)
+
         else:
             print_clean('Message format not supported.')
 
 def udp_get(filename):
-    global list_file, send_socket
+    global list_file, udp_send_sck, udp_port
     nodes = read_file(list_file)
-    msg = 'Gett {}'.format(filename)
-    print('\n----------------------------------')
-    print('Get message sent to:')
+    msg = 'Gett {} {}'.format(filename, udp_port)
+    print_clean('\n----------------------------------')
+    print_clean('Get message sent to:')
     for node in nodes.items():
-        send_socket.sendto(msg.encode('utf-8'), (node[1], node[0]))
-        print('   {}:{}'.format(node[1], node[0]))
+        udp_send_sck.sendto(msg.encode('utf-8'), (node[1], node[0]))
+        print_clean('   {}:{}'.format(node[1], node[0]))
+    print()
 
 def process_get(msg, source):
-    global send_socket
+    global udp_send_sck, folder
     msg = msg.strip()[5:]
     filename, destination_port = msg.split(' ')
     destination_port = int(destination_port)
-    files = os.listdir('./path')
+    if not os.path.exists(folder):
+        return
+    files = os.listdir(folder)
     for file in files:
         if file == filename:
             msg = build_get_response(filename)
-            send_socket.sendto(msg.encode('utf-8'), (source[0], destination_port))
+            udp_send_sck.sendto(msg.encode('utf-8'), (source[0], destination_port))
             return
+
+def process_resp(msg, source):
+    global current_request_file
+    msg = msg.strip()[5:]
+    port, sent_time, filename = msg.split('\n')
+    sent_time = datetime.datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S.%f')
+    if filename == current_request_file:
+        delay = datetime.datetime.now() - sent_time
+        response_buffer.append((source[0], port, delay))
 
 def build_get_response(filename):
     global tcp_port
     now = datetime.datetime.now()
-    msg = 'Resp {}\n{}'.format(tcp_port, now)
-    return msg            
+    msg = 'Resp {}\n{}\n{}'.format(tcp_port, now, filename)
+    return msg     
+
+def download_best():
+    global response_buffer
+    if len(response_buffer) == 0:
+        print('File wasn\'t found.')
+    response_buffer.sort(key=lambda x:x[1])
+    best = response_buffer[0]
+    print(best)
 
 def print_clean(msg):
     print_lock.acquire()
@@ -149,4 +184,5 @@ if __name__ == "__main__":
 
     # print(d)
     # print(t2 - d)
+    # print(os.path.exists('x'))
     main()
