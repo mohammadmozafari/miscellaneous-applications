@@ -4,19 +4,22 @@ import os
 import time
 
 print_lock = threading.Lock()
+udp_port = 0
 
 def main():
-    dis_listen_port = 1446
-    dis_file_path = 'list.nw'
+    global udp_port
+    
+    udp_port = int(input('Enter UDP port: '))
+    path = 'list.txt'
     dis_interval = 5
 
-    discovery_recv = threading.Thread(target=recv_nodes, args=(dis_listen_port, dis_file_path))
+    discovery_recv = threading.Thread(target=recv_nodes, args=(udp_port, path))
     discovery_recv.start()
-
-    discovery_send = threading.Thread(target=send_nodes, args=(dis_listen_port, dis_file_path, dis_interval))
+    discovery_send = threading.Thread(target=send_nodes, args=(udp_port, path, dis_interval))
     discovery_send.start()
 
-def read_cluster_file(path):
+
+def read_file(path):
     cluster = {}
     if not os.path.exists(path):
         return cluster
@@ -24,32 +27,36 @@ def read_cluster_file(path):
         lines = f.readlines()
         for line in lines:
             l = line.strip()
-            name, addr = l.split(' ')
-            cluster[name] = addr
+            port, ip = l.split(' ')
+            cluster[int(port)] = ip
     return cluster
 
-def update_cluster_file(new_cluster, path):
-    cluster = read_cluster_file(path)
+def update_file(new_cluster, path):
+    cluster = read_file(path)
     cluster.update(new_cluster)
-    with open(path, 'w') as f:
-        for x, y in cluster.items():
-            if x == socket.gethostname():
-                continue
-            f.write(x + ' ' + y + '\n')
-
-def deserialize_string(st):
-    st = st.strip()
-    cluster = {}
-    nodes = st.split(' ')
-    for node in nodes:
-        name, addr = node.split(',')
-        cluster[name] = addr
-    return cluster
-
-def serialize_dic(dic):
     st = ''
-    for x, y in dic.items():
-        st += (x + ',' + y + ' ')
+    with open(path, 'w') as f:
+        for port, ip in cluster.items():
+            if port == udp_port:
+                continue
+            st += str(port) + ' ' + ip + '\n'
+        f.write(st.strip())
+
+def extract_data(msg):
+    msg = msg.strip()[5:]
+    cluster = {}
+    nodes = msg.split('\n')
+    p = int(nodes[0])
+    nodes = nodes[1:]
+    for node in nodes:
+        port, ip = node.split(' ')
+        cluster[int(port)] = ip
+    return cluster, p
+
+def build_message(dic):
+    st = 'Disc {}\n'.format(udp_port)
+    for port, ip in dic.items():
+        st += '{} {}\n'.format(port, ip)
     return st.strip()
 
 def recv_nodes(port, path):
@@ -59,19 +66,19 @@ def recv_nodes(port, path):
     while True:
         data, addr = sck.recvfrom(1024)
         data = data.decode('utf-8')
-        cluster = deserialize_string(data)
-        cluster.update({socket.gethostbyaddr(addr[0])[0]: addr[0]})
-        update_cluster_file(cluster, path)
+        cluster, port = extract_data(data)
+        cluster.update({port: addr[0]})
+        update_file(cluster, path)
         print_clean('DISC RECV: Discovery message received.')
 
 def send_nodes(port, path, interval):
     sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
-        cluster = read_cluster_file(path)
-        data = serialize_dic(cluster)
-        for name, addr in cluster.items():
-            sck.sendto(data.encode('utf-8'), (addr, port))
-            print_clean('DISC SEND: Sent dis message to ' + addr)
+        cluster = read_file(path)
+        data = build_message(cluster)
+        for port, ip in cluster.items():
+            sck.sendto(data.encode('utf-8'), (ip, port))
+            print_clean('DISC SEND: Sent dis message to ' + ip + ':' + str(port))
         time.sleep(interval)
 
 def print_clean(msg):
