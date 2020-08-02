@@ -7,6 +7,7 @@ import random as rnd
 
 current_request_file = None
 response_buffer = []
+num_tcp_connections = 0
 
 def main():
     global response_buffer, current_request_file
@@ -15,6 +16,8 @@ def main():
     folder = './files/'
     interval = 5
     wait = 2
+    connection_limit = 2
+
     udp_port = int(input('Enter UDP port: '))
     tcp_port = rnd.randint(12000, 13000)
     print('UDP listening on {}'.format(udp_port))
@@ -22,7 +25,7 @@ def main():
     
 
     tcp_receiver = threading.Thread(target=tcp_recv, args=(tcp_port, folder))
-    udp_receiver = threading.Thread(target=udp_recv, args=(udp_port, list_file, folder, tcp_port))
+    udp_receiver = threading.Thread(target=udp_recv, args=(udp_port, list_file, folder, tcp_port, connection_limit))
     udp_sender = threading.Thread(target=udp_send_discovery, args=(udp_port, list_file, interval))
     udp_receiver.start()
     udp_sender.start()
@@ -109,11 +112,13 @@ def build_message(dic, my_port):
 # ---------------------------------------------------------------
 
 def tcp_recv(tcp_port, folder):
+    global num_tcp_connections
     sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sck.bind(('', tcp_port))
     sck.listen(5)
     while True:
         connection, addr = sck.accept()
+        num_tcp_connections += 1
         filename = connection.recv(1024).decode('utf-8')
         with open(folder + filename, 'r') as f:
             l = f.read(1024)
@@ -121,8 +126,9 @@ def tcp_recv(tcp_port, folder):
                 connection.send(l.encode('utf-8'))
                 l = f.read(1024)
         connection.shutdown(socket.SHUT_WR)
+        num_tcp_connections -= 1
 
-def udp_recv(udp_port, path, folder, tcp_port):
+def udp_recv(udp_port, path, folder, tcp_port, connection_limit):
     sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sck.bind(('', udp_port))
     while True:
@@ -136,7 +142,8 @@ def udp_recv(udp_port, path, folder, tcp_port):
             update_file(cluster, path, udp_port)
 
         elif msg_type == 'Gett':
-            udp_send_resp(msg, addr, folder, tcp_port)
+            if num_tcp_connections < connection_limit:
+                udp_send_resp(msg, addr, folder, tcp_port)
 
         elif msg_type == 'Resp':
             save_resp(msg, addr)
