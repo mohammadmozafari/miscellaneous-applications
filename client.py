@@ -7,11 +7,14 @@ import random as rnd
 
 udp_send_sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_recv_sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+tcp_send_sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+tcp_recv_sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 print_lock = threading.Lock()
 udp_port = 0
 tcp_port = 0
 list_file = 'list.txt'
-folder = './files'
+folder = './files/'
 disc_interval = 5
 get_sent_time = None
 download_wait = 2
@@ -23,15 +26,20 @@ def main():
     
     udp_port = int(input('Enter UDP port: '))
     tcp_port = rnd.randint(12000, 13000)
+    print('UDP listening on {}'.format(udp_port))
+    print('TCP listening on {}\n'.format(tcp_port))
     
 
     discovery_recv = threading.Thread(target=udp_recv, args=(udp_port, list_file))
-    discovery_recv.start()
     discovery_send = threading.Thread(target=send_disc, args=(udp_port, list_file))
+    tcp = threading.Thread(target=tcp_listen, args=(tcp_port, folder))
+    
+    discovery_recv.start()
     discovery_send.start()
+    tcp.start()
 
     while True:
-        command = input()
+        command = input('> ')
         command = command.strip()
         
         if command == 'exit':
@@ -41,9 +49,13 @@ def main():
             current_request_file = command[4:]
             udp_get(command[4:])
             time.sleep(download_wait)
-            download_best()
+            best = find_best_candidate()
+            if best == None:
+                continue
             response_buffer = []
             current_request_file = None
+            download_from(command[4:], best)
+            print_clean('----------------------------------\n')
 
 
 def read_file(path):
@@ -99,7 +111,6 @@ def send_disc(port, path):
 def udp_recv(port, path):
     sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sck.bind(('', port))
-    print_clean('DISC RECV: Listening ...')
     while True:
         msg, addr = sck.recvfrom(1024)
         msg = msg.decode('utf-8')
@@ -150,8 +161,8 @@ def process_resp(msg, source):
     port, sent_time, filename = msg.split('\n')
     sent_time = datetime.datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S.%f')
     if filename == current_request_file:
-        delay = datetime.datetime.now() - sent_time
-        response_buffer.append((source[0], port, delay))
+        delay = (datetime.datetime.now() - sent_time).total_seconds()
+        response_buffer.append((source[0], int(port), delay))
 
 def build_get_response(filename):
     global tcp_port
@@ -159,13 +170,46 @@ def build_get_response(filename):
     msg = 'Resp {}\n{}\n{}'.format(tcp_port, now, filename)
     return msg     
 
-def download_best():
+def find_best_candidate():
     global response_buffer
     if len(response_buffer) == 0:
         print('File wasn\'t found.')
+        return None
+    print('File was found on:')
+    for res in response_buffer:
+        print('  {}:{} with delay {} seconds'.format(res[0], res[1], res[2]))
     response_buffer.sort(key=lambda x:x[1])
     best = response_buffer[0]
-    print(best)
+    print('Downloading from {}:{} ...'.format(best[0], best[1]))
+    return best
+
+def download_from(filename, host):
+    global tcp_send_sck, folder
+    buff = 1024
+    ip, port = host[0], host[1]
+    tcp_send_sck.connect((ip, port))
+    tcp_send_sck.send(filename.encode('utf-8'))
+    with open(folder + filename, 'w') as f:
+        l = tcp_send_sck.recv(buff).decode('utf-8')
+        while l:
+            f.write(l)
+            l = tcp_send_sck.recv(buff).decode('utf-8')
+    tcp_send_sck.close()
+    print('Download complete.')
+
+def tcp_listen(tcp_port, folder):
+    global tcp_recv_sck
+    tcp_recv_sck.bind(('', tcp_port))
+    tcp_recv_sck.listen(5)
+    while True:
+        connection, addr = tcp_recv_sck.accept()
+        filename = connection.recv(1024).decode('utf-8')
+        with open(folder + filename, 'r') as f:
+            l = f.read(1024)
+            while l:
+                connection.send(l.encode('utf-8'))
+                l = f.read(1024)
+        connection.shutdown(socket.SHUT_WR)
 
 def print_clean(msg):
     print_lock.acquire()
