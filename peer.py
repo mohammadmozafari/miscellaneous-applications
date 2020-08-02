@@ -87,13 +87,13 @@ def read_file(path):
             cluster[name] = (ip, int(port))
     return cluster
 
-def update_file(new_cluster, path, udp_port):
+def update_file(new_cluster, path, hname):
     cluster = read_file(path)
     cluster.update(new_cluster)
     st = ''
     with open(path, 'w') as f:
         for name, (ip, port) in cluster.items():
-            if port == udp_port:
+            if name == hname:
                 continue
             st += '{} {} {}\n'.format(name, ip, port)
         f.write(st)
@@ -102,18 +102,18 @@ def extract_data(msg):
     msg = msg.strip()[5:]
     cluster = {}
     nodes = msg.split('\n')
-    name, p = nodes[0].split(' ')
+    n, p = nodes[0].split(' ')
     p = int(p)
     nodes = nodes[1:]
     for node in nodes:
         name, ip, port = node.split(' ')
         cluster[name] = (ip, port)
-    return cluster, name, p
+    return cluster, n, p
 
 def build_message(dic, udp_port, node_name):
     st = 'Disc {} {}\n'.format(node_name, udp_port)
     for name, (ip, port) in dic.items():
-        st += '{} {} {}\n'.format(node_name, ip, port)
+        st += '{} {} {}\n'.format(name, ip, port)
     return st
 
 
@@ -149,8 +149,9 @@ def udp_recv(udp_port, path, folder, tcp_port, connection_limit, hname):
         
         if msg_type == 'Disc':
             cluster, name, port = extract_data(msg)
+            # print(cluster, name, port)
             cluster.update({name: (addr[0], port)})
-            update_file(cluster, path, udp_port)
+            update_file(cluster, path, hname)
 
         elif msg_type == 'Gett':
             if num_tcp_connections < connection_limit:
@@ -201,14 +202,12 @@ def udp_send_resp(msg, source, folder, tcp_port, hname):
             return
 
 def save_resp(msg, source):
-    global current_request_file, response_buffer, prior_communications
+    global current_request_file, response_buffer
     msg = msg.strip()[5:]
     destination, sent_time, filename = msg.split('\n')
     dname, dport = destination.split(' ') 
     dport = int(dport)
     sent_time = datetime.datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S.%f')
-    temp = prior_communications.get(dname, 0)
-    prior_communications[dname] = temp + 1
     if filename == current_request_file:
         delay = (datetime.datetime.now() - sent_time).total_seconds()
         response_buffer.append((dname, source[0], dport, delay))
@@ -233,8 +232,9 @@ def find_best_candidate():
     return best
 
 def download_from(filename, host, folder):
+    global prior_communications
     buff = 1024
-    ip, port = host[1], host[2]
+    hname, ip, port = host[0], host[1], host[2]
     sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sck.connect((ip, port))
     sck.send(filename.encode('utf-8'))
@@ -245,6 +245,8 @@ def download_from(filename, host, folder):
             l = sck.recv(buff)
     sck.close()
     print('Download complete.')
+    temp = prior_communications.get(hname, 0)
+    prior_communications[hname] = temp + 1
 
 def display_list(path):
     cluster = read_file(path)
