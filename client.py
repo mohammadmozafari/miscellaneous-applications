@@ -7,7 +7,7 @@ import random as rnd
 
 udp_send_sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_recv_sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-tcp_send_sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 tcp_recv_sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 print_lock = threading.Lock()
@@ -39,6 +39,7 @@ def main():
     tcp.start()
 
     while True:
+        print_clean('\n----------------------------------')
         command = input('> ')
         command = command.strip()
         
@@ -46,16 +47,16 @@ def main():
             return
 
         elif command[:3] == 'get':
-            current_request_file = command[4:]
-            udp_get(command[4:])
+            filename = command[4:]
+            current_request_file = filename
+            udp_get(filename)
             time.sleep(download_wait)
             best = find_best_candidate()
             if best == None:
                 continue
             response_buffer = []
             current_request_file = None
-            download_from(command[4:], best)
-            print_clean('----------------------------------\n')
+            download_from(filename, best)
 
 
 def read_file(path):
@@ -184,9 +185,10 @@ def find_best_candidate():
     return best
 
 def download_from(filename, host):
-    global tcp_send_sck, folder
+    global folder
     buff = 1024
     ip, port = host[0], host[1]
+    tcp_send_sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_send_sck.connect((ip, port))
     tcp_send_sck.send(filename.encode('utf-8'))
     with open(folder + filename, 'w') as f:
