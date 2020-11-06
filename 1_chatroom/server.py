@@ -25,7 +25,7 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 token = self.build_token(username)
                 users[token] = username
-                self.generate_response(200, 'OK')
+                self.generate_response(200, 'OK', {'token': token})
             print(users)
             print('-------------------------------\n')
 
