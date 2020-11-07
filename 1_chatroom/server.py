@@ -1,20 +1,34 @@
+import time
 import json
 import hashlib
 import random as rnd
+from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 users = {}
 encoding = 'utf-8'
+waitings = []
 
 def start_server():
     port = 8080
-    server = HTTPServer(('localhost', port), Handler)
+    server = ThreadedHTTPServer(('localhost', port), Handler)
     print('Server is running on port {}\n'.format(port))
     server.serve_forever()
+
+class ThreadedHTTPServer(HTTPServer):
+    def process_request(self, request, client_address):
+        thread = Thread(target=self.__new_request, args=(
+            self.RequestHandlerClass, request, client_address, self))
+        thread.start()
+
+    def __new_request(self, handlerClass, request, address, server):
+        handlerClass(request, address, server)
+        self.shutdown_request(request)
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):        
         if self.path == '/get':
+            time.sleep(10)
             pass
 
     def do_POST(self):
@@ -48,6 +62,9 @@ class Handler(BaseHTTPRequestHandler):
     def get_request_body_as_json(self):
         msg_size = int(self.headers.get('Content-Length'))
         return json.loads(self.rfile.read(msg_size).decode(encoding))
+
+class Message():
+    pass
 
 if __name__ == "__main__":
     start_server()
