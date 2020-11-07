@@ -2,12 +2,13 @@ import time
 import json
 import hashlib
 import random as rnd
-from threading import Thread
+from threading import Thread, Event, Lock
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 users = {}
 encoding = 'utf-8'
 waitings = []
+message = None
 
 def start_server():
     port = 8080
@@ -64,7 +65,21 @@ class Handler(BaseHTTPRequestHandler):
         return json.loads(self.rfile.read(msg_size).decode(encoding))
 
 class Message():
-    pass
+    def __init__(self):
+        self.data = ''
+        self.event = Event()
+        self.lock = Lock()
+        self.event.clear()
+
+    def read(self):
+        self.event.wait()
+        return message.data
+
+    def write(self, data):
+        with self.lock:
+            self.data = data
+            self.event.set()
+            self.event.clear()
 
 if __name__ == "__main__":
     start_server()
