@@ -3,19 +3,20 @@ import requests
 from threading import Thread
 
 join_path = 'http://localhost:8080/join'
-get_path = 'localhost:8080/get'
-send_path = 'localhost:8080/send'
+get_path = 'http://localhost:8080/get'
+send_path = 'http://localhost:8080/send'
+token = None
 
 def main():
     enter()
-    listener = Thread()
+    Thread(target=get_message, args=()).start()
+    send_message()
 
 def enter():
+    global token
     while True:
         uname = input('Enter your username: ')
-
         resp = requests.post(join_path, data=json.dumps({'username':uname}))
-        print('shit')
         if resp.status_code != 200:
             print('Username is not accepted. Try again!')
         else:
@@ -23,6 +24,20 @@ def enter():
             token = resp.json()['token']
             print('My token:', token)
             break
+
+def get_message():
+    while True:
+        resp = requests.get(get_path, headers={'Sender': token})
+        if resp.status_code == 200:
+            dic = resp.json()
+            sender = dic['sender']
+            message = dic['message']
+            print('{}: {}'.format(sender, message))
+
+def send_message():
+    while True:
+        message = input()
+        requests.post(send_path, headers={'Sender': token}, data=json.dumps({'message':message}))
 
 if __name__ == "__main__":
     main()
