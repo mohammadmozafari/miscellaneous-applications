@@ -29,6 +29,7 @@ class ThreadedHTTPServer(HTTPServer):
         self.shutdown_request(request)
 
 class Handler(BaseHTTPRequestHandler):
+
     def do_GET(self):        
         if self.path == '/get':
             self.get()
@@ -38,11 +39,15 @@ class Handler(BaseHTTPRequestHandler):
             self.join()
 
         if self.path == '/send':
-            pass
+            self.send()
+
+    # =================================================
 
     def get(self):
-        sender, msg = message.read()
-        self.generate_response(dic={'sender':sender, 'message':msg})
+        if self.authenticate():
+            sender, msg = message.read()
+            self.generate_response(dic={'sender':sender, 'message':msg})
+        print('-------------------------------\n')
 
     def join(self):
         username = self.get_request_body_as_json()['username']
@@ -56,9 +61,14 @@ class Handler(BaseHTTPRequestHandler):
         print('-------------------------------\n')
     
     def send(self):
-        sender = users[self.headers.get('Sender')]
-        msg = self.get_request_body_as_json()['message']
-        message.write(msg, sender)
+        if self.authenticate():
+            sender = users[self.headers.get('Sender')]
+            msg = self.get_request_body_as_json()['message']
+            message.write(msg, sender)
+            self.generate_response()
+        print('-------------------------------\n')
+
+    # =================================================
     
     def build_token(self, name):
         n1 = rnd.randint(1, 100)
@@ -76,6 +86,12 @@ class Handler(BaseHTTPRequestHandler):
     def get_request_body_as_json(self):
         msg_size = int(self.headers.get('Content-Length'))
         return json.loads(self.rfile.read(msg_size).decode(encoding))
+
+    def authenticate(self):
+        if self.headers.get('Sender') not in users.keys():
+            self.generate_response(401, 'Unauthorized')
+            return False
+        return True
 
 class Message():
     def __init__(self):
