@@ -11,7 +11,9 @@ waitings = []
 message = None
 
 def start_server():
+    global message
     port = 8080
+    message = Message()
     server = ThreadedHTTPServer(('localhost', port), Handler)
     print('Server is running on port {}\n'.format(port))
     server.serve_forever()
@@ -29,24 +31,35 @@ class ThreadedHTTPServer(HTTPServer):
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):        
         if self.path == '/get':
-            time.sleep(10)
-            pass
+            self.get()
 
     def do_POST(self):
         if self.path == '/join':
-            username = self.get_request_body_as_json()['username']
-            if username in users.values():
-                self.generate_response(403, 'Already exists')
-            else:
-                token = self.build_token(username)
-                users[token] = username
-                self.generate_response(200, 'OK', {'token': token})
-            print(users)
-            print('-------------------------------\n')
+            self.join()
 
         if self.path == '/send':
             pass
 
+    def get(self):
+        sender, msg = message.read()
+        self.generate_response(dic={'sender':sender, 'message':msg})
+
+    def join(self):
+        username = self.get_request_body_as_json()['username']
+        if username in users.values():
+            self.generate_response(403, 'Already exists')
+        else:
+            token = self.build_token(username)
+            users[token] = username
+            self.generate_response(200, 'OK', {'token': token})
+        print(users)
+        print('-------------------------------\n')
+    
+    def send(self):
+        sender = users[self.headers.get('Sender')]
+        msg = self.get_request_body_as_json()['message']
+        message.write(msg, sender)
+    
     def build_token(self, name):
         n1 = rnd.randint(1, 100)
         n2 = rnd.randint(1, 100)
@@ -67,17 +80,19 @@ class Handler(BaseHTTPRequestHandler):
 class Message():
     def __init__(self):
         self.data = ''
+        self.sender = ''
         self.event = Event()
         self.lock = Lock()
         self.event.clear()
 
     def read(self):
         self.event.wait()
-        return message.data
+        return self.sender, self.data
 
-    def write(self, data):
+    def write(self, data, sender):
         with self.lock:
             self.data = data
+            self.sender = sender
             self.event.set()
             self.event.clear()
 
