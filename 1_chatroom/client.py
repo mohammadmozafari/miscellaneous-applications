@@ -6,6 +6,7 @@ join_path = 'http://localhost:8080/join'
 get_path = 'http://localhost:8080/get'
 send_path = 'http://localhost:8080/send'
 token = None
+uname = None
 
 def main():
     enter()
@@ -13,7 +14,7 @@ def main():
     send_message()
 
 def enter():
-    global token
+    global token, uname
     while True:
         uname = input('Enter your username: ')
         resp = requests.post(join_path, data=json.dumps({'username':uname}))
@@ -23,6 +24,7 @@ def enter():
             print('Welcome to chatroom')
             token = resp.json()['token']
             print('My token:', token)
+            print('------------------------------------\n')
             break
 
 def get_message():
@@ -32,7 +34,8 @@ def get_message():
             dic = resp.json()
             sender = dic['sender']
             message = dic['message']
-            print('{}: {}'.format(sender, message))
+            if sender != uname:
+                print('{}: {}'.format(sender, message))
 
 def send_message():
     while True:

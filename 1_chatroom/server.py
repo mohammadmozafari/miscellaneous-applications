@@ -46,7 +46,6 @@ class Handler(BaseHTTPRequestHandler):
         if self.authenticate():
             sender, msg = message.read()
             self.generate_response(dic={'sender':sender, 'message':msg})
-        print('-------------------------------\n')
 
     def join(self):
         username = self.get_request_body_as_json()['username']
@@ -65,7 +64,6 @@ class Handler(BaseHTTPRequestHandler):
             msg = self.get_request_body_as_json()['message']
             message.write(msg, sender)
             self.generate_response()
-        print('-------------------------------\n')
 
     # =================================================
     
